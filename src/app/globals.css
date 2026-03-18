@@ -104,47 +104,52 @@
 }
 
 /* ========================================
-   RehaGym ONE — Dark Theme
+   RehaGym ONE — Dark Theme (tmavě zelená)
+   Palette built on brand turquoise #0E1919
+   with lagoon teal accents — NOT pure black
    ======================================== */
 .dark {
+  /* Base: Deep forest green, not black */
   --background: #0E1919;
-  --foreground: #E8F0F0;
-  --card: #132323;
-  --card-foreground: #E8F0F0;
-  --popover: #132323;
-  --popover-foreground: #E8F0F0;
-  /* Primary = Lagoon (slightly lighter for dark bg) */
+  --foreground: #E2EDED;
+  /* Cards: Slightly elevated dark green */
+  --card: #142626;
+  --card-foreground: #E2EDED;
+  /* Popovers: Same as card for consistency */
+  --popover: #142626;
+  --popover-foreground: #E2EDED;
+  /* Primary = Lagoon (brighter for dark bg legibility) */
   --primary: #00A3B3;
   --primary-foreground: #FFFFFF;
-  /* Secondary */
-  --secondary: #1A3535;
-  --secondary-foreground: #80CDD4;
-  /* Muted */
-  --muted: #1A3030;
-  --muted-foreground: #8A9E9F;
-  /* Accent = Orange */
-  --accent: #FFAD00;
+  /* Secondary = subtle green elevation */
+  --secondary: #1C3838;
+  --secondary-foreground: #7BCDD4;
+  /* Muted = very subtle green tint */
+  --muted: #1A3232;
+  --muted-foreground: #8BAAAB;
+  /* Accent = Orange (stays vivid in dark) */
+  --accent: #FFB81C;
   --accent-foreground: #0E1919;
   /* Destructive */
-  --destructive: #E5484D;
-  /* Borders & inputs */
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.12);
+  --destructive: #F06B6B;
+  /* Borders & inputs: teal-tinted edges */
+  --border: #1F3D3D;
+  --input: #1F3D3D;
   --ring: #00A3B3;
-  /* Charts */
-  --chart-1: #00A3B3;
-  --chart-2: #FFAD00;
-  --chart-3: #80CDD4;
-  --chart-4: #ffc233;
-  --chart-5: #4DD8E0;
-  /* Sidebar */
-  --sidebar: #0C1515;
-  --sidebar-foreground: #E8F0F0;
+  /* Charts: vivid palette for dark bg */
+  --chart-1: #00BFD1;
+  --chart-2: #FFB81C;
+  --chart-3: #7BCDD4;
+  --chart-4: #FFD166;
+  --chart-5: #4DE0E8;
+  /* Sidebar: deepest green — sense of depth */
+  --sidebar: #0B1414;
+  --sidebar-foreground: #D4E4E4;
   --sidebar-primary: #00A3B3;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1A3535;
-  --sidebar-accent-foreground: #80CDD4;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-accent: #1C3838;
+  --sidebar-accent-foreground: #7BCDD4;
+  --sidebar-border: #182E2E;
   --sidebar-ring: #00A3B3;
 }
 
@@ -155,4 +160,12 @@
   body {
     @apply bg-background text-foreground font-sans;
   }
+}
+
+/* Smooth theme transition */
+html.transitioning,
+html.transitioning *,
+html.transitioning *::before,
+html.transitioning *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease !important;
 }

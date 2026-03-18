@@ -20,8 +20,11 @@ import {
   LogOut,
   TrendingUp,
   TrendingDown,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useTheme } from "@/components/shared/theme-provider";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import {
@@ -124,6 +127,7 @@ function NavGroup({
 
 export function AppSidebar() {
   const { user } = useAuth();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const router = useRouter();
   const supabase = createClient();
 
@@ -170,7 +174,27 @@ export function AppSidebar() {
         <NavGroup label="Administrace" items={adminNav} />
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-3">
+      <SidebarFooter className="border-t border-sidebar-border p-3 space-y-2">
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-3 w-full rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+          title={resolvedTheme === "dark" ? "Přepnout na světlý režim" : "Přepnout na tmavý režim"}
+        >
+          {resolvedTheme === "dark" ? (
+            <>
+              <Sun className="size-3.5" />
+              <span>Světlý režim</span>
+            </>
+          ) : (
+            <>
+              <Moon className="size-3.5" />
+              <span>Tmavý režim</span>
+            </>
+          )}
+        </button>
+
+        {/* User info */}
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9 border-2 border-primary/20">
             <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
