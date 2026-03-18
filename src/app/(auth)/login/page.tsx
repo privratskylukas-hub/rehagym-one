@@ -30,7 +30,13 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setError("Neplatné přihlašovací údaje");
+      if (error.message.includes("Email not confirmed")) {
+        setError("Email není potvrzen. Zkontrolujte schránku nebo potvrďte ručně v Supabase.");
+      } else if (error.message.includes("Invalid login credentials")) {
+        setError("Nesprávný email nebo heslo.");
+      } else {
+        setError(error.message);
+      }
       setLoading(false);
       return;
     }
