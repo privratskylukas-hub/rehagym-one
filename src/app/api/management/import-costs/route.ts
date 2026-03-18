@@ -24,44 +24,54 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Soubor neobsahuje žádná data" }, { status: 400 });
       }
 
+      // Map columns — Karát naklady.xlsx format:
+      // Středisko, Úč.měsíc, Dat.úč.př., Účet, Má dáti, Dal, Obrat, Text, Poznámka
       const rows = rawRows.map((row) => {
         const mapped: Record<string, any> = {};
 
-        // Date
-        const dateVal = row["Datum"] || row["datum"] || row["date"] || row["Date"] || "";
+        // Date — Dat.úč.př. column (accounting date)
+        const dateVal = row["Dat.úč.př."] || row["Datum"] || row["date"] || "";
         if (dateVal instanceof Date) {
           mapped.date = dateVal.toISOString().split("T")[0];
+        } else if (typeof dateVal === "number") {
+          const d = new Date((dateVal - 25569) * 86400 * 1000);
+          mapped.date = d.toISOString().split("T")[0];
         } else if (typeof dateVal === "string" && dateVal) {
-          const parts = dateVal.split(/[./\-]/);
-          if (parts.length === 3) {
-            const [d, m, y] = parts;
-            mapped.date = `${y.length === 2 ? "20" + y : y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+          // Handle "2025-09-29 00:00:00" or "29.09.2025"
+          if (dateVal.includes("-")) {
+            mapped.date = dateVal.split(" ")[0]; // "2025-09-29"
           } else {
-            mapped.date = dateVal;
+            const parts = dateVal.split(/[./]/);
+            if (parts.length === 3) {
+              const [d, m, y] = parts;
+              mapped.date = `${y.length === 2 ? "20" + y : y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+            } else {
+              mapped.date = dateVal;
+            }
           }
         } else {
           mapped.date = null;
         }
 
-        // Accounting period
-        mapped.accounting_period = row["Období"] || row["Účetní období"] || row["accounting_period"] || "";
-        // Category
-        mapped.category = row["Kategorie"] || row["KAT"] || row["category"] || row["Druh"] || "";
-        // Account code
-        mapped.account_code = row["Účet"] || row["account_code"] || row["Kód účtu"] || row["SÚ/AU"] || "";
-        // Description
-        mapped.description = row["Popis"] || row["popis"] || row["description"] || row["Název"] || row["Text"] || "";
-        // Note
-        mapped.note = row["Poznámka"] || row["note"] || row["Pozn."] || "";
+        // Accounting period — Úč.měsíc (2025/09)
+        mapped.accounting_period = row["Úč.měsíc"] || row["Období"] || "";
+        // Category — Středisko column (SLUŽBY, MAJETEK, FIXNÍ, etc.)
+        mapped.category = row["Středisko"] || row["Kategorie"] || row["category"] || "";
+        // Account code — Účet column (501/104, 518/400, etc.)
+        mapped.account_code = row["Účet"] || row["account_code"] || "";
+        // Description — Text column
+        mapped.description = row["Text"] || row["Popis"] || row["description"] || "";
+        // Note — Poznámka column
+        mapped.note = row["Poznámka"] || row["note"] || "";
 
-        // Debit
-        const debitVal = row["MD"] || row["Má dáti"] || row["debit"] || 0;
+        // Debit — Má dáti column
+        const debitVal = row["Má dáti"] || row["MD"] || 0;
         mapped.debit = typeof debitVal === "number" ? debitVal : parseFloat(String(debitVal).replace(/[^\d.,-]/g, "").replace(",", ".")) || 0;
-        // Credit
-        const creditVal = row["D"] || row["Dal"] || row["credit"] || 0;
+        // Credit — Dal column
+        const creditVal = row["Dal"] || row["D"] || 0;
         mapped.credit = typeof creditVal === "number" ? creditVal : parseFloat(String(creditVal).replace(/[^\d.,-]/g, "").replace(",", ".")) || 0;
-        // Amount (obrat)
-        const amountVal = row["Obrat"] || row["Částka"] || row["amount"] || row["Amount"] || 0;
+        // Amount — Obrat column
+        const amountVal = row["Obrat"] || row["Částka"] || row["amount"] || 0;
         mapped.amount = typeof amountVal === "number" ? amountVal : parseFloat(String(amountVal).replace(/[^\d.,-]/g, "").replace(",", ".")) || 0;
 
         // If amount is 0 but debit/credit exist, calculate
@@ -69,8 +79,8 @@ export async function POST(request: NextRequest) {
           mapped.amount = Math.abs(mapped.debit - mapped.credit);
         }
 
-        // Department
-        mapped.department = row["Oddělení"] || row["Středisko"] || row["department"] || row["NS"] || "";
+        // Department — Středisko2 column or fallback
+        mapped.department = row["Středisko2"] || row["Středisko"] || row["department"] || "";
         // Source
         mapped.source_system = "karat";
 

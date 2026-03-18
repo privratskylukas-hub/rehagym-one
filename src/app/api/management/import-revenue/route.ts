@@ -24,16 +24,20 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Soubor neobsahuje žádná data" }, { status: 400 });
       }
 
-      // Map columns — try to be flexible with column names
+      // Map columns — SmartMedix trzby.xlsx format:
+      // DATUM, KAT, KOD, POPIS, NAZEV, CELKEM, DPH, TYPDOKL, CISDOKL, VYNOS, PLATCE, PLATCEIDENT, DATVYST, ZPUSUHR, Středisko
       const rows = rawRows.map((row) => {
         const mapped: Record<string, any> = {};
 
-        // Date
-        const dateVal = row["Datum"] || row["datum"] || row["date"] || row["Date"] || "";
+        // Date — DATUM column (Excel Date object or string)
+        const dateVal = row["DATUM"] || row["Datum"] || row["datum"] || row["date"] || "";
         if (dateVal instanceof Date) {
           mapped.date = dateVal.toISOString().split("T")[0];
+        } else if (typeof dateVal === "number") {
+          // Excel serial date number
+          const d = new Date((dateVal - 25569) * 86400 * 1000);
+          mapped.date = d.toISOString().split("T")[0];
         } else if (typeof dateVal === "string" && dateVal) {
-          // Try various date formats
           const parts = dateVal.split(/[./\-]/);
           if (parts.length === 3) {
             const [d, m, y] = parts;
@@ -45,32 +49,30 @@ export async function POST(request: NextRequest) {
           mapped.date = null;
         }
 
-        // Category
-        mapped.category = row["Kategorie"] || row["KAT"] || row["category"] || row["kat"] || "";
-        // Code
-        mapped.code = row["Kód"] || row["kod"] || row["code"] || row["Code"] || "";
-        // Description
-        mapped.description = row["Popis"] || row["popis"] || row["description"] || row["Název"] || "";
-        // Client name
-        mapped.client_name = row["Klient"] || row["klient"] || row["client_name"] || row["Jméno"] || "";
-        // Amount
-        const amountVal = row["Částka"] || row["castka"] || row["amount"] || row["Amount"] || row["Cena"] || 0;
+        // Category — KAT column (RESPECT, BALICEK, SUPLMNT, etc.)
+        mapped.category = row["KAT"] || row["Kategorie"] || row["category"] || "";
+        // Code — KOD column (RES_IDV, PROT_COK, etc.)
+        mapped.code = row["KOD"] || row["Kód"] || row["code"] || "";
+        // Description — POPIS column
+        mapped.description = row["POPIS"] || row["Popis"] || row["description"] || "";
+        // Client name — NAZEV or PLATCE column
+        mapped.client_name = row["NAZEV"] || row["PLATCE"] || row["Klient"] || row["client_name"] || "";
+        // Amount — CELKEM column (total including VAT)
+        const amountVal = row["CELKEM"] || row["Částka"] || row["amount"] || 0;
         mapped.amount = typeof amountVal === "number" ? amountVal : parseFloat(String(amountVal).replace(/[^\d.,-]/g, "").replace(",", ".")) || 0;
-        // VAT rate
-        mapped.vat_rate = parseInt(row["DPH"] || row["dph"] || row["vat_rate"] || "0") || 0;
-        // Net amount
-        mapped.net_amount = row["Bez DPH"] || row["net_amount"] || null;
-        if (mapped.net_amount && typeof mapped.net_amount !== "number") {
-          mapped.net_amount = parseFloat(String(mapped.net_amount).replace(/[^\d.,-]/g, "").replace(",", ".")) || null;
-        }
-        // Payment method
-        mapped.payment_method = row["Způsob"] || row["ZPUSUHR"] || row["payment_method"] || row["Úhrada"] || "";
-        // Document type
-        mapped.document_type = row["Typ dok."] || row["document_type"] || row["Doklad"] || "";
-        // Document number
-        mapped.document_number = row["Č. dok."] || row["document_number"] || row["Číslo"] || "";
-        // Department
-        mapped.department = row["Středisko"] || row["stredisko"] || row["department"] || row["Oddělení"] || "";
+        // VAT rate — DPH column
+        mapped.vat_rate = parseInt(row["DPH"] || row["dph"] || "0") || 0;
+        // Net amount — VYNOS column (revenue without VAT)
+        const netVal = row["VYNOS"] || row["Bez DPH"] || null;
+        mapped.net_amount = netVal != null ? (typeof netVal === "number" ? netVal : parseFloat(String(netVal).replace(/[^\d.,-]/g, "").replace(",", ".")) || null) : null;
+        // Payment method — ZPUSUHR column (H=cash, K=card, B=transfer)
+        mapped.payment_method = row["ZPUSUHR"] || row["Způsob"] || "";
+        // Document type — TYPDOKL column (D, F, O)
+        mapped.document_type = row["TYPDOKL"] || row["Typ dok."] || "";
+        // Document number — CISDOKL column
+        mapped.document_number = row["CISDOKL"] || row["Č. dok."] || "";
+        // Department — Středisko column (GYM, REHA, PRODUKTY, etc.)
+        mapped.department = row["Středisko"] || row["stredisko"] || row["department"] || "";
         // Source
         mapped.source_system = "smartmedix";
 
