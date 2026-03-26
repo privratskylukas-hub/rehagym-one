@@ -59,7 +59,7 @@ export default function LoginPage() {
 
         <div className="relative z-10 flex flex-col items-center text-center px-12">
           <Image
-            src="/rehagym-logo.png"
+            src="/rehagym-logo.svg"
             alt="RehaGym"
             width={180}
             height={180}
@@ -86,7 +86,7 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="lg:hidden flex flex-col items-center mb-8">
             <Image
-              src="/rehagym-logo.png"
+              src="/rehagym-logo.svg"
               alt="RehaGym"
               width={80}
               height={80}

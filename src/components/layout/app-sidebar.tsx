@@ -149,7 +149,7 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
         <Link href="/dashboard" className="flex items-center gap-3">
           <Image
-            src="/rehagym-logo.png"
+            src="/rehagym-logo.svg"
             alt="RehaGym"
             width={36}
             height={36}
