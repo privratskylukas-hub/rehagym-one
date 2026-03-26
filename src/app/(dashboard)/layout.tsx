@@ -1,3 +1,6 @@
+// Prevent static prerendering — all dashboard pages need auth + Supabase at runtime
+export const dynamic = "force-dynamic";
+
 import { AuthProvider } from "@/lib/auth-context";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";

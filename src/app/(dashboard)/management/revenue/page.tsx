@@ -1,6 +1,5 @@
 // @ts-nocheck
 "use client";
-
 import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth-context";

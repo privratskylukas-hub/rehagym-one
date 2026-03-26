@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 // @ts-nocheck — Supabase types will be auto-generated once connected
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
