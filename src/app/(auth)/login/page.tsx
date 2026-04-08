@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,22 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Show auth errors from callback (expired link, invalid token, etc.)
+  useEffect(() => {
+    const err = searchParams.get("error");
+    if (err) {
+      if (err === "missing_code") {
+        setError("Chybí autorizační kód. Zkuste to znovu.");
+      } else if (err.includes("expired")) {
+        setError("Odkaz vypršel. Požádejte o nový.");
+      } else {
+        setError(decodeURIComponent(err));
+      }
+    }
+  }, [searchParams]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -242,12 +258,12 @@ export default function LoginPage() {
               </form>
 
               <div className="mt-6 text-center">
-                <a
+                <Link
                   href="/forgot-password"
                   className="text-sm text-primary hover:text-primary/80 transition-colors font-medium"
                 >
                   Zapomenuté heslo?
-                </a>
+                </Link>
               </div>
             </CardContent>
           </Card>

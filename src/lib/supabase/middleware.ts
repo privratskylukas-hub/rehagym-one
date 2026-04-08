@@ -30,7 +30,10 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Public routes that don't require authentication
-  const publicPaths = ["/login", "/forgot-password", "/reset-password"];
+  const publicPaths = ["/login", "/forgot-password"];
+  // Reset-password is special: a recovery token grants a temporary session,
+  // but the user still needs to set a new password — don't redirect them away.
+  const isResetPassword = request.nextUrl.pathname.startsWith("/reset-password");
   const isPublicPath = publicPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
@@ -38,12 +41,13 @@ export async function updateSession(request: NextRequest) {
   // API routes handle their own auth (service role key)
   const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
 
-  if (!user && !isPublicPath && !isApiRoute) {
+  if (!user && !isPublicPath && !isResetPassword && !isApiRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
+  // Logged-in users shouldn't see login/forgot (but CAN access reset-password)
   if (user && isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
