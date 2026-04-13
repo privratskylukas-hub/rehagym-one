@@ -331,7 +331,7 @@ export default function ClientDetailPage() {
                           </div>
                         </div>
                         <Badge variant={b.status === "completed" ? "default" : b.status === "cancelled" ? "destructive" : "outline"}>
-                          {b.status}
+                          {{ confirmed: "Potvrzená", pending: "Čekající", completed: "Dokončená", cancelled: "Zrušená", no_show: "Nedostavil se" }[b.status] || b.status}
                         </Badge>
                       </div>
                     ))}
@@ -363,7 +363,7 @@ export default function ClientDetailPage() {
                         <div className="text-right">
                           <div className="font-medium text-sm">{Number(p.amount).toLocaleString("cs-CZ")} {p.currency}</div>
                           <Badge variant={p.status === "paid" ? "default" : p.status === "overdue" ? "destructive" : "outline"} className="text-xs">
-                            {p.status}
+                            {{ paid: "Zaplaceno", pending: "Čeká", overdue: "Po splatnosti", refunded: "Vráceno", cancelled: "Zrušeno" }[p.status] || p.status}
                           </Badge>
                         </div>
                       </div>
@@ -389,7 +389,9 @@ export default function ClientDetailPage() {
                       <div key={r.id} className="border-b pb-3 last:border-0">
                         <div className="flex items-center justify-between">
                           <div className="font-medium text-sm">{r.title}</div>
-                          <Badge variant="outline" className="text-xs">{r.type}</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {{ initial_exam: "Vstupní vyšetření", follow_up: "Kontrola", diagnosis: "Diagnóza", treatment: "Léčba", discharge: "Propuštění", note: "Poznámka", anamnesis: "Anamnéza" }[r.type] || r.type}
+                          </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
                           {new Date(r.created_at).toLocaleDateString("cs-CZ")}
