@@ -63,6 +63,22 @@ const COLORS = {
 
 const PIE_COLORS = [COLORS.lagoon, COLORS.orange, COLORS.green, COLORS.blue, COLORS.purple, COLORS.pink, COLORS.red];
 
+// Czech labels for categories and departments — mirror revenue/costs pages
+const CATEGORY_LABELS: Record<string, string> = {
+  RESPECT: "RESPECT", BALICEK: "Balíček", KLUB_SKO: "Klub / Škola",
+  ZD_STD: "ZP standard", NZD_STD: "Samoplátce", ZD_SK: "ZP – skupina",
+  NZD_SK: "Samoplátce – skupina", "RE.CODE": "Re.Code", SUPLMNT: "Doplňky",
+  MERCH: "Merch", VIP: "VIP", "OSTATNÍ": "Ostatní",
+};
+const DEPT_LABELS: Record<string, string> = {
+  GYM: "Fitness (GYM)", REHA: "Rehabilitace", "Re.Life": "Re.Life",
+  PRODUKTY: "Produkty", Vouchery: "Vouchery", REHAGYM: "RehaGym",
+  FITNESS: "Fitness", MANAGEMENT: "Vedení", ORDINACE: "Ordinace", RECEPCE: "Recepce",
+  Ostatní: "Ostatní",
+};
+const labelCat = (c: string) => CATEGORY_LABELS[c] || c;
+const labelDept = (d: string) => DEPT_LABELS[d] || d;
+
 const fmtCZK = (amount: number) =>
   amount.toLocaleString("cs-CZ", { style: "currency", currency: "CZK", maximumFractionDigits: 0 });
 
@@ -226,7 +242,7 @@ export default function ManagementDashboardPage() {
     });
     setDepartmentPie(
       Array.from(deptMap.entries())
-        .map(([name, value]) => ({ name, value }))
+        .map(([name, value]) => ({ name: labelDept(name), value }))
         .sort((a, b) => b.value - a.value)
     );
 
@@ -238,7 +254,7 @@ export default function ManagementDashboardPage() {
     });
     setCategoryBars(
       Array.from(catMap.entries())
-        .map(([category, amount]) => ({ category, amount }))
+        .map(([category, amount]) => ({ category: labelCat(category), amount }))
         .sort((a, b) => b.amount - a.amount)
     );
 

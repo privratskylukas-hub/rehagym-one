@@ -306,11 +306,11 @@ CREATE POLICY "Training plans - read"
 CREATE POLICY "Training plans - write"
   ON training_plans FOR ALL TO authenticated
   USING (
-    has_permission(auth.uid(), 'training.read_all')
+    has_permission(auth.uid(), 'training.write_all')
     OR (has_permission(auth.uid(), 'training.write_own') AND trainer_id = auth.uid())
   )
   WITH CHECK (
-    has_permission(auth.uid(), 'training.read_all')
+    has_permission(auth.uid(), 'training.write_all')
     OR (has_permission(auth.uid(), 'training.write_own') AND trainer_id = auth.uid())
   );
 
@@ -324,11 +324,11 @@ CREATE POLICY "Training sessions - read"
 CREATE POLICY "Training sessions - write"
   ON training_sessions FOR ALL TO authenticated
   USING (
-    has_permission(auth.uid(), 'training.read_all')
+    has_permission(auth.uid(), 'training.write_all')
     OR (has_permission(auth.uid(), 'training.write_own') AND trainer_id = auth.uid())
   )
   WITH CHECK (
-    has_permission(auth.uid(), 'training.read_all')
+    has_permission(auth.uid(), 'training.write_all')
     OR (has_permission(auth.uid(), 'training.write_own') AND trainer_id = auth.uid())
   );
 

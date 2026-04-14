@@ -31,6 +31,25 @@ const SEGMENT_MAP: Record<string, string> = {
 const GENDER_MAP: Record<string, string> = { male: "Muž", female: "Žena", other: "Jiné" };
 const CONTACT_MAP: Record<string, string> = { email: "E-mail", sms: "SMS", phone: "Telefon", whatsapp: "WhatsApp" };
 
+const BOOKING_STATUS_MAP: Record<string, string> = {
+  confirmed: "Potvrzená", pending: "Čekající", completed: "Dokončená",
+  cancelled: "Zrušená", no_show: "Nedostavil se",
+};
+
+const PAYMENT_STATUS_MAP: Record<string, string> = {
+  paid: "Zaplaceno", pending: "Čeká", overdue: "Po splatnosti",
+  refunded: "Vráceno", cancelled: "Zrušeno",
+};
+
+const PAYMENT_METHOD_MAP: Record<string, string> = {
+  cash: "Hotovost", card: "Karta", bank_transfer: "Převod", transfer: "Převod", stripe: "Stripe",
+};
+
+const MEDICAL_TYPE_MAP: Record<string, string> = {
+  initial_exam: "Vstupní vyšetření", follow_up: "Kontrola", diagnosis: "Diagnóza",
+  treatment: "Léčba", discharge: "Propuštění", note: "Poznámka", anamnesis: "Anamnéza",
+};
+
 function InfoRow({ label, value, icon: Icon }: { label: string; value: string | null | undefined; icon?: any }) {
   if (!value) return null;
   return (
@@ -331,7 +350,7 @@ export default function ClientDetailPage() {
                           </div>
                         </div>
                         <Badge variant={b.status === "completed" ? "default" : b.status === "cancelled" ? "destructive" : "outline"}>
-                          {{ confirmed: "Potvrzená", pending: "Čekající", completed: "Dokončená", cancelled: "Zrušená", no_show: "Nedostavil se" }[b.status] || b.status}
+                          {BOOKING_STATUS_MAP[b.status] || b.status}
                         </Badge>
                       </div>
                     ))}
@@ -357,13 +376,13 @@ export default function ClientDetailPage() {
                         <div>
                           <div className="font-medium text-sm">{p.description || "Platba"}</div>
                           <div className="text-xs text-muted-foreground">
-                            {new Date(p.created_at).toLocaleDateString("cs-CZ")} · {p.method}
+                            {new Date(p.created_at).toLocaleDateString("cs-CZ")} · {PAYMENT_METHOD_MAP[p.method] || p.method}
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="font-medium text-sm">{Number(p.amount).toLocaleString("cs-CZ")} {p.currency}</div>
                           <Badge variant={p.status === "paid" ? "default" : p.status === "overdue" ? "destructive" : "outline"} className="text-xs">
-                            {{ paid: "Zaplaceno", pending: "Čeká", overdue: "Po splatnosti", refunded: "Vráceno", cancelled: "Zrušeno" }[p.status] || p.status}
+                            {PAYMENT_STATUS_MAP[p.status] || p.status}
                           </Badge>
                         </div>
                       </div>
@@ -390,7 +409,7 @@ export default function ClientDetailPage() {
                         <div className="flex items-center justify-between">
                           <div className="font-medium text-sm">{r.title}</div>
                           <Badge variant="outline" className="text-xs">
-                            {{ initial_exam: "Vstupní vyšetření", follow_up: "Kontrola", diagnosis: "Diagnóza", treatment: "Léčba", discharge: "Propuštění", note: "Poznámka", anamnesis: "Anamnéza" }[r.type] || r.type}
+                            {MEDICAL_TYPE_MAP[r.type] || r.type}
                           </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">

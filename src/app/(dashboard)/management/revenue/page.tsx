@@ -69,6 +69,40 @@ const PAYMENT_METHODS: Record<string, string> = {
   B: "Převod",
 };
 
+// Czech labels for SmartMedix revenue categories
+const CATEGORY_LABELS: Record<string, string> = {
+  RESPECT: "RESPECT (firemní)",
+  BALICEK: "Balíček",
+  KLUB_SKO: "Klub / Škola",
+  ZD_STD: "ZP standard",
+  NZD_STD: "Samoplátce",
+  ZD_SK: "ZP – skupina",
+  NZD_SK: "Samoplátce – skupina",
+  "RE.CODE": "Re.Code",
+  SUPLMNT: "Doplňky",
+  MERCH: "Merch",
+  VIP: "VIP",
+  "OSTATNÍ": "Ostatní",
+};
+const labelCategory = (c?: string | null) =>
+  !c ? "—" : CATEGORY_LABELS[c] || c;
+
+// Czech labels for departments / cost centers
+const DEPARTMENT_LABELS: Record<string, string> = {
+  GYM: "Fitness (GYM)",
+  REHA: "Rehabilitace",
+  "Re.Life": "Re.Life",
+  PRODUKTY: "Produkty",
+  Vouchery: "Vouchery",
+  REHAGYM: "RehaGym",
+  FITNESS: "Fitness",
+  MANAGEMENT: "Vedení",
+  ORDINACE: "Ordinace",
+  RECEPCE: "Recepce",
+};
+const labelDepartment = (d?: string | null) =>
+  !d ? "—" : DEPARTMENT_LABELS[d] || d;
+
 const fmtCZK = (amount: number) =>
   amount.toLocaleString("cs-CZ", { style: "currency", currency: "CZK", maximumFractionDigits: 0 });
 
@@ -435,7 +469,7 @@ export default function RevenuePage() {
                         {format(parseISO(entry.date), "d. M. yyyy")}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-xs">{entry.category}</Badge>
+                        <Badge variant="outline" className="text-xs">{labelCategory(entry.category)}</Badge>
                       </TableCell>
                       <TableCell className="text-xs font-mono">{entry.code || "—"}</TableCell>
                       <TableCell className="text-sm max-w-[200px] truncate">{entry.description || "—"}</TableCell>
@@ -445,7 +479,7 @@ export default function RevenuePage() {
                       </TableCell>
                       <TableCell className="text-xs">{entry.vat_rate}%</TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="text-xs">{entry.department || "—"}</Badge>
+                        <Badge variant="secondary" className="text-xs">{labelDepartment(entry.department)}</Badge>
                       </TableCell>
                       <TableCell className="text-xs">
                         {PAYMENT_METHODS[entry.payment_method] || entry.payment_method || "—"}
@@ -503,14 +537,14 @@ export default function RevenuePage() {
                     {previewData.map((row, i) => (
                       <TableRow key={i}>
                         <TableCell className="text-xs">{row.date || "—"}</TableCell>
-                        <TableCell className="text-xs">{row.category || "—"}</TableCell>
+                        <TableCell className="text-xs">{labelCategory(row.category)}</TableCell>
                         <TableCell className="text-xs font-mono">{row.code || "—"}</TableCell>
                         <TableCell className="text-xs max-w-[150px] truncate">{row.description || "—"}</TableCell>
                         <TableCell className="text-xs">{row.client_name || "—"}</TableCell>
                         <TableCell className="text-xs text-right font-semibold">
                           {row.amount ? fmtCZK(Number(row.amount)) : "—"}
                         </TableCell>
-                        <TableCell className="text-xs">{row.department || "—"}</TableCell>
+                        <TableCell className="text-xs">{labelDepartment(row.department)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

@@ -1,16 +1,34 @@
-// @ts-nocheck — Supabase types will be auto-generated once connected
+// @ts-nocheck
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import * as XLSX from "xlsx";
 
-export async function POST(request: NextRequest) {
-  const supabase = createAdminClient();
-  const body = await request.json();
+async function authorizeUser(requiredPermission: string) {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { error: NextResponse.json({ error: "Nepřihlášen" }, { status: 401 }), user: null };
+  }
+  const { data: hasPerm } = await supabase.rpc("has_permission", {
+    p_user_id: user.id,
+    p_permission_code: requiredPermission,
+  });
+  if (!hasPerm) {
+    return { error: NextResponse.json({ error: "Nedostatečné oprávnění" }, { status: 403 }), user: null };
+  }
+  return { error: null, user };
+}
 
+export async function POST(request: NextRequest) {
+  const { error: authResponse, user } = await authorizeUser("management.revenue");
+  if (authResponse) return authResponse;
+
+  const body = await request.json();
   const { action } = body;
 
-  // ── Preview: parse XLSX and return rows ────────────────────
+  // ── Preview: parse XLSX and return rows (no DB write, auth-only) ──
 
   if (action === "preview") {
     try {
@@ -25,17 +43,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Soubor neobsahuje žádná data" }, { status: 400 });
       }
 
-      // Map columns — SmartMedix trzby.xlsx format:
-      // DATUM, KAT, KOD, POPIS, NAZEV, CELKEM, DPH, TYPDOKL, CISDOKL, VYNOS, PLATCE, PLATCEIDENT, DATVYST, ZPUSUHR, Středisko
       const rows = rawRows.map((row) => {
         const mapped: Record<string, any> = {};
-
-        // Date — DATUM column (Excel Date object or string)
         const dateVal = row["DATUM"] || row["Datum"] || row["datum"] || row["date"] || "";
         if (dateVal instanceof Date) {
           mapped.date = dateVal.toISOString().split("T")[0];
         } else if (typeof dateVal === "number") {
-          // Excel serial date number
           const d = new Date((dateVal - 25569) * 86400 * 1000);
           mapped.date = d.toISOString().split("T")[0];
         } else if (typeof dateVal === "string" && dateVal) {
@@ -49,74 +62,52 @@ export async function POST(request: NextRequest) {
         } else {
           mapped.date = null;
         }
-
-        // Category — KAT column (RESPECT, BALICEK, SUPLMNT, etc.)
         mapped.category = row["KAT"] || row["Kategorie"] || row["category"] || "";
-        // Code — KOD column (RES_IDV, PROT_COK, etc.)
         mapped.code = row["KOD"] || row["Kód"] || row["code"] || "";
-        // Description — POPIS column
         mapped.description = row["POPIS"] || row["Popis"] || row["description"] || "";
-        // Client name — NAZEV or PLATCE column
         mapped.client_name = row["NAZEV"] || row["PLATCE"] || row["Klient"] || row["client_name"] || "";
-        // Amount — CELKEM column (total including VAT)
         const amountVal = row["CELKEM"] || row["Částka"] || row["amount"] || 0;
         mapped.amount = typeof amountVal === "number" ? amountVal : parseFloat(String(amountVal).replace(/[^\d.,-]/g, "").replace(",", ".")) || 0;
-        // VAT rate — DPH column
         mapped.vat_rate = parseInt(row["DPH"] || row["dph"] || "0") || 0;
-        // Net amount — VYNOS column (revenue without VAT)
         const netVal = row["VYNOS"] || row["Bez DPH"] || null;
         mapped.net_amount = netVal != null ? (typeof netVal === "number" ? netVal : parseFloat(String(netVal).replace(/[^\d.,-]/g, "").replace(",", ".")) || null) : null;
-        // Payment method — ZPUSUHR column (H=cash, K=card, B=transfer)
         mapped.payment_method = row["ZPUSUHR"] || row["Způsob"] || "";
-        // Document type — TYPDOKL column (D, F, O)
         mapped.document_type = row["TYPDOKL"] || row["Typ dok."] || "";
-        // Document number — CISDOKL column
         mapped.document_number = row["CISDOKL"] || row["Č. dok."] || "";
-        // Department — Středisko column (GYM, REHA, PRODUKTY, etc.)
         mapped.department = row["Středisko"] || row["stredisko"] || row["department"] || "";
-        // Source
         mapped.source_system = "smartmedix";
-
         return mapped;
       }).filter((row) => row.date && row.amount);
 
-      return NextResponse.json({
-        preview: rows.slice(0, 10),
-        rows,
-        total: rows.length,
-      });
+      return NextResponse.json({ preview: rows.slice(0, 10), rows, total: rows.length });
     } catch (err) {
       console.error("XLSX parse error:", err);
       return NextResponse.json({ error: "Chyba při zpracování souboru" }, { status: 500 });
     }
   }
 
-  // ── Import: save rows to database ──────────────────────────
+  // ── Import: save rows to database (uses admin client for RLS bypass) ──
 
   if (action === "import") {
     try {
-      const { rows, file_name, imported_by } = body;
-
+      const { rows, file_name } = body;
       if (!rows || rows.length === 0) {
         return NextResponse.json({ error: "Žádná data k importu" }, { status: 400 });
       }
 
-      // Determine period range
+      const admin = createAdminClient();
       const dates = rows.map((r: any) => r.date).filter(Boolean).sort();
-      const periodFrom = dates[0] || null;
-      const periodTo = dates[dates.length - 1] || null;
 
-      // Create import batch
-      const { data: batch, error: batchError } = await supabase
+      const { data: batch, error: batchError } = await admin
         .from("import_batches")
         .insert({
           type: "revenue",
           source_system: "smartmedix",
           file_name: file_name || "unknown.xlsx",
           row_count: rows.length,
-          period_from: periodFrom,
-          period_to: periodTo,
-          imported_by: imported_by || null,
+          period_from: dates[0] || null,
+          period_to: dates[dates.length - 1] || null,
+          imported_by: user!.id,
         })
         .select("id")
         .single();
@@ -126,7 +117,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Chyba při vytváření importu" }, { status: 500 });
       }
 
-      // Insert revenue entries in chunks of 100
       const CHUNK_SIZE = 100;
       let insertedCount = 0;
 
@@ -148,10 +138,7 @@ export async function POST(request: NextRequest) {
           import_batch_id: batch.id,
         }));
 
-        const { error: insertError } = await supabase
-          .from("revenue_entries")
-          .insert(chunk);
-
+        const { error: insertError } = await admin.from("revenue_entries").insert(chunk);
         if (insertError) {
           console.error("Insert error at chunk", i, insertError);
           return NextResponse.json({
@@ -159,15 +146,10 @@ export async function POST(request: NextRequest) {
             count: insertedCount,
           }, { status: 500 });
         }
-
         insertedCount += chunk.length;
       }
 
-      return NextResponse.json({
-        success: true,
-        count: insertedCount,
-        batch_id: batch.id,
-      });
+      return NextResponse.json({ success: true, count: insertedCount, batch_id: batch.id });
     } catch (err) {
       console.error("Import error:", err);
       return NextResponse.json({ error: "Neočekávaná chyba při importu" }, { status: 500 });

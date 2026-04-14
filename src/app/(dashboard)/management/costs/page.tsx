@@ -74,6 +74,36 @@ const FIXED_COST_CATEGORIES: Record<string, string> = {
   other: "Ostatní",
 };
 
+// Czech labels for variable Karát cost categories
+const COST_CATEGORY_LABELS: Record<string, string> = {
+  "FIXNÍ": "Fixní náklady",
+  "MATERIÁL": "Materiál",
+  "SLUŽBY": "Služby",
+  "MAJETEK": "Majetek",
+  "MARKETING": "Marketing",
+  "ODPISY": "Odpisy",
+  GYM: "Fitness (GYM)",
+  REHA: "Rehabilitace",
+  "Re.Life": "Re.Life",
+  "MZDY": "Mzdy",
+};
+const labelCostCategory = (c?: string | null) =>
+  !c ? "—" : COST_CATEGORY_LABELS[c] || c;
+
+// Czech labels for departments
+const DEPARTMENT_LABELS: Record<string, string> = {
+  REHAGYM: "RehaGym",
+  FITNESS: "Fitness",
+  MANAGEMENT: "Vedení",
+  ORDINACE: "Ordinace",
+  RECEPCE: "Recepce",
+  GYM: "Fitness (GYM)",
+  REHA: "Rehabilitace",
+  "Re.Life": "Re.Life",
+};
+const labelDepartment = (d?: string | null) =>
+  !d ? "—" : DEPARTMENT_LABELS[d] || d;
+
 const fmtCZK = (amount: number) =>
   amount.toLocaleString("cs-CZ", { style: "currency", currency: "CZK", maximumFractionDigits: 0 });
 
@@ -573,7 +603,7 @@ export default function CostsPage() {
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">{entry.accounting_period || "—"}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="text-xs">{entry.category}</Badge>
+                            <Badge variant="outline" className="text-xs">{labelCostCategory(entry.category)}</Badge>
                           </TableCell>
                           <TableCell className="text-xs font-mono">{entry.account_code || "—"}</TableCell>
                           <TableCell className="text-sm max-w-[200px] truncate">
@@ -588,7 +618,7 @@ export default function CostsPage() {
                             {fmtCZK(Number(entry.amount))}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary" className="text-xs">{entry.department || "—"}</Badge>
+                            <Badge variant="secondary" className="text-xs">{labelDepartment(entry.department)}</Badge>
                           </TableCell>
                         </TableRow>
                       ))
@@ -730,13 +760,13 @@ export default function CostsPage() {
                     {previewData.map((row, i) => (
                       <TableRow key={i}>
                         <TableCell className="text-xs">{row.date || "—"}</TableCell>
-                        <TableCell className="text-xs">{row.category || "—"}</TableCell>
+                        <TableCell className="text-xs">{labelCostCategory(row.category)}</TableCell>
                         <TableCell className="text-xs font-mono">{row.account_code || "—"}</TableCell>
                         <TableCell className="text-xs max-w-[150px] truncate">{row.description || "—"}</TableCell>
                         <TableCell className="text-xs text-right font-semibold">
                           {row.amount ? fmtCZK(Number(row.amount)) : "—"}
                         </TableCell>
-                        <TableCell className="text-xs">{row.department || "—"}</TableCell>
+                        <TableCell className="text-xs">{labelDepartment(row.department)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

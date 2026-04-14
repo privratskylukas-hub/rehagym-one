@@ -28,6 +28,7 @@ INSERT INTO permissions (code, module, action, scope, display_name, description)
 ('training.read_own', 'training', 'read', 'own', 'Zobrazit vlastní tréninky', 'Tréninkové plány vlastních klientů'),
 ('training.write_own', 'training', 'write', 'own', 'Spravovat vlastní tréninky', 'Tvorba plánů pro vlastní klienty'),
 ('training.read_all', 'training', 'read', 'all', 'Zobrazit všechny tréninky', 'Přístup ke všem tréninkovým plánům'),
+('training.write_all', 'training', 'write', 'all', 'Spravovat všechny tréninky', 'Tvorba a editace plánů pro všechny klienty'),
 
 -- Payments
 ('payments.read', 'payments', 'read', 'all', 'Zobrazit platby', 'Přehled plateb a balíčků'),
@@ -97,7 +98,7 @@ AND p.code IN (
   'clients.read', 'clients.health.read',
   'bookings.read', 'bookings.write',
   'medical.read_all', 'medical.write_all',
-  'training.read_all'
+  'training.read_all', 'training.write_all'
 );
 
 -- Physiotherapist

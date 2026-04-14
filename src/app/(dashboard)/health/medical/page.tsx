@@ -103,7 +103,7 @@ const PAGE_SIZE = 20;
 export default function MedicalRecordsPage() {
   const router = useRouter();
   const supabase = createClient();
-  const { user, loading: authLoading, hasPermission } = useAuth();
+  const { user, loading: authLoading, hasPermission, hasAnyPermission } = useAuth();
 
   // Data
   const [records, setRecords] = useState<MedicalRecord[]>([]);
@@ -272,11 +272,20 @@ export default function MedicalRecordsPage() {
     if (!form.title) { toast.error("Vyplňte název záznamu"); return; }
     if (!form.content) { toast.error("Vyplňte obsah záznamu"); return; }
 
+    // RLS requires provider_id = auth.uid() for medical.write_own.
+    // Default to current user if not chosen, otherwise users without
+    // medical.write_all will be rejected with row-level security error.
+    const effectiveProviderId = form.provider_id || user?.id || null;
+    if (!effectiveProviderId) {
+      toast.error("Chybí poskytovatel záznamu");
+      return;
+    }
+
     setSaving(true);
 
     const payload = {
       client_id: form.client_id,
-      provider_id: form.provider_id || null,
+      provider_id: effectiveProviderId,
       type: form.type,
       title: form.title,
       content: form.content,
@@ -299,7 +308,10 @@ export default function MedicalRecordsPage() {
 
     if (error) {
       console.error("Error saving record:", error);
-      toast.error("Chyba při ukládání záznamu");
+      const msg = error.message?.includes("row-level security")
+        ? "Nemáte oprávnění zapsat tento záznam."
+        : `Chyba při ukládání záznamu: ${error.message}`;
+      toast.error(msg);
     } else {
       toast.success(editingRecord ? "Záznam aktualizován" : "Záznam vytvořen");
       setDialogOpen(false);
@@ -337,7 +349,7 @@ export default function MedicalRecordsPage() {
               Vyšetření, diagnózy a léčebné plány
             </p>
           </div>
-          {hasPermission("medical.write") && (
+          {hasAnyPermission(["medical.write_own", "medical.write_all"]) && (
             <Button onClick={() => { resetForm(); setDialogOpen(true); }} className="bg-lagoon hover:bg-lagoon/90">
               <Plus className="size-4 mr-2" />
               Nový záznam
@@ -440,7 +452,7 @@ export default function MedicalRecordsPage() {
                             <Eye className="size-3 mr-1" />
                             Zobrazit
                           </Button>
-                          {hasPermission("medical.write") && (
+                          {hasAnyPermission(["medical.write_own", "medical.write_all"]) && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -450,7 +462,7 @@ export default function MedicalRecordsPage() {
                               Upravit
                             </Button>
                           )}
-                          {hasPermission("medical.write") && (
+                          {hasAnyPermission(["medical.write_own", "medical.write_all"]) && (
                             <Button
                               variant="ghost"
                               size="sm"

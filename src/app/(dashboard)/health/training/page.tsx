@@ -51,7 +51,7 @@ const PAGE_SIZE = 20;
 export default function TrainingPage() {
   const router = useRouter();
   const supabase = createClient();
-  const { user, loading: authLoading, hasPermission } = useAuth();
+  const { user, loading: authLoading, hasPermission, hasAnyPermission } = useAuth();
 
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [providers, setProviders] = useState<{ id: string; full_name: string }[]>([]);
@@ -132,9 +132,14 @@ export default function TrainingPage() {
   const handleSave = async () => {
     if (!form.client_id) { toast.error("Vyberte klienta"); return; }
     if (!form.date) { toast.error("Vyplňte datum"); return; }
+
+    // RLS requires trainer_id = auth.uid() for training.write_own.
+    const effectiveTrainerId = form.trainer_id || user?.id || null;
+    if (!effectiveTrainerId) { toast.error("Chybí trenér"); return; }
+
     setSaving(true);
     const payload = {
-      client_id: form.client_id, trainer_id: form.trainer_id || null, date: form.date,
+      client_id: form.client_id, trainer_id: effectiveTrainerId, date: form.date,
       duration_minutes: parseInt(form.duration_minutes) || 60, exercises: form.exercises || null,
       notes: form.notes || null, performance_rating: form.performance_rating ? parseInt(form.performance_rating) : null,
       client_feedback: form.client_feedback || null,
@@ -142,7 +147,15 @@ export default function TrainingPage() {
     let error;
     if (editingSession) { const r = await supabase.from("training_sessions").update(payload).eq("id", editingSession.id); error = r.error; }
     else { const r = await supabase.from("training_sessions").insert(payload); error = r.error; }
-    if (error) { toast.error("Chyba při ukládání"); } else { toast.success(editingSession ? "Záznam upraven" : "Záznam vytvořen"); setDialogOpen(false); resetForm(); loadSessions(); }
+    if (error) {
+      const msg = error.message?.includes("row-level security")
+        ? "Nemáte oprávnění zapsat tento záznam."
+        : `Chyba při ukládání: ${error.message}`;
+      toast.error(msg);
+    } else {
+      toast.success(editingSession ? "Záznam upraven" : "Záznam vytvořen");
+      setDialogOpen(false); resetForm(); loadSessions();
+    }
     setSaving(false);
   };
 
@@ -167,7 +180,7 @@ export default function TrainingPage() {
             <h1 className="text-2xl font-bold tracking-tight">Tréninkové záznamy</h1>
             <p className="text-sm text-muted-foreground">Záznamy z tréninků a cvičení</p>
           </div>
-          {hasPermission("training.write") && (
+          {hasAnyPermission(["training.write_own", "training.write_all"]) && (
             <Button onClick={() => { resetForm(); setDialogOpen(true); }} className="bg-lagoon hover:bg-lagoon/90">
               <Plus className="size-4 mr-2" />Nový záznam
             </Button>
@@ -195,7 +208,7 @@ export default function TrainingPage() {
                   <TableHead>Délka</TableHead>
                   <TableHead>Hodnocení</TableHead>
                   <TableHead>Cvičení</TableHead>
-                  {hasPermission("training.write") && <TableHead className="text-right">Akce</TableHead>}
+                  {hasAnyPermission(["training.write_own", "training.write_all"]) && <TableHead className="text-right">Akce</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -218,7 +231,7 @@ export default function TrainingPage() {
                     <TableCell className="text-sm">{s.duration_minutes ? `${s.duration_minutes} min` : "—"}</TableCell>
                     <TableCell><RatingStars rating={s.performance_rating} /></TableCell>
                     <TableCell className="text-sm max-w-[200px] truncate">{s.exercises || "—"}</TableCell>
-                    {hasPermission("training.write") && (
+                    {hasAnyPermission(["training.write_own", "training.write_all"]) && (
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => openEdit(s)}>Upravit</Button>
                       </TableCell>

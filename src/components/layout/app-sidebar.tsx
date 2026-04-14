@@ -58,7 +58,7 @@ const mainNav: NavItem[] = [
 
 const healthNav: NavItem[] = [
   { title: "Zdravotní záznamy", href: "/health/medical", icon: Stethoscope, permissions: ["medical.read_own", "medical.read_all"] },
-  { title: "Fyzioterapie", href: "/health/physio", icon: Heart, permissions: ["medical.read_own", "medical.read_all"] },
+  { title: "Fyzioterapie", href: "/health/physio", icon: Heart, permissions: ["training.read_own", "training.read_all"] },
   { title: "Tréninkové plány", href: "/health/training", icon: Dumbbell, permissions: ["training.read_own", "training.read_all"] },
 ];
 

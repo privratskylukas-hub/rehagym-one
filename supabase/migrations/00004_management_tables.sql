@@ -217,11 +217,11 @@ CREATE POLICY "management_fixed_costs" ON fixed_monthly_costs
 
 -- ── Seed management permissions ────────────────────────────────
 
-INSERT INTO permissions (code, module, description) VALUES
-  ('management.dashboard', 'management', 'Přístup k executive dashboardu'),
-  ('management.revenue', 'management', 'Správa tržeb a importů'),
-  ('management.costs', 'management', 'Správa nákladů a importů'),
-  ('management.providers', 'management', 'Správa trenérů a vytížení')
+INSERT INTO permissions (code, module, action, scope, display_name, description) VALUES
+  ('management.dashboard', 'management', 'read', 'all', 'Executive Dashboard', 'Přístup k executive dashboardu'),
+  ('management.revenue', 'management', 'manage', 'all', 'Správa tržeb', 'Správa tržeb a importů'),
+  ('management.costs', 'management', 'manage', 'all', 'Správa nákladů', 'Správa nákladů a importů'),
+  ('management.providers', 'management', 'manage', 'all', 'Správa trenérů', 'Správa trenérů a vytížení')
 ON CONFLICT (code) DO NOTHING;
 
 -- Grant management permissions to management role and super_admin

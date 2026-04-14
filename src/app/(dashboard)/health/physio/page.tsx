@@ -64,7 +64,7 @@ const PAGE_SIZE = 20;
 export default function PhysioPage() {
   const router = useRouter();
   const supabase = createClient();
-  const { user, loading: authLoading, hasPermission } = useAuth();
+  const { user, loading: authLoading, hasPermission, hasAnyPermission } = useAuth();
 
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -196,10 +196,17 @@ export default function PhysioPage() {
     if (!form.client_id) { toast.error("Vyberte klienta"); return; }
     if (!form.name) { toast.error("Vyplňte název plánu"); return; }
 
+    // RLS requires trainer_id = auth.uid() for training.write_own.
+    const effectiveTrainerId = form.trainer_id || user?.id || null;
+    if (!effectiveTrainerId) {
+      toast.error("Chybí trenér");
+      return;
+    }
+
     setSaving(true);
     const payload = {
       client_id: form.client_id,
-      trainer_id: form.trainer_id || null,
+      trainer_id: effectiveTrainerId,
       name: form.name,
       description: form.description || null,
       goals: form.goals || null,
@@ -219,7 +226,10 @@ export default function PhysioPage() {
     }
 
     if (error) {
-      toast.error("Chyba při ukládání");
+      const msg = error.message?.includes("row-level security")
+        ? "Nemáte oprávnění zapsat tento plán."
+        : `Chyba při ukládání: ${error.message}`;
+      toast.error(msg);
     } else {
       toast.success(editingPlan ? "Plán aktualizován" : "Plán vytvořen");
       setDialogOpen(false);
@@ -240,14 +250,14 @@ export default function PhysioPage() {
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
-    <RequirePermission permissions={["medical.read_own", "medical.read_all"]}>
+    <RequirePermission permissions={["training.read_own", "training.read_all"]}>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Fyzioterapie</h1>
             <p className="text-sm text-muted-foreground">Rehabilitační a tréninkové plány</p>
           </div>
-          {hasPermission("medical.write") && (
+          {hasAnyPermission(["training.write_own", "training.write_all"]) && (
             <Button onClick={() => { resetForm(); setDialogOpen(true); }} className="bg-lagoon hover:bg-lagoon/90">
               <Plus className="size-4 mr-2" />
               Nový plán
@@ -286,7 +296,7 @@ export default function PhysioPage() {
                   <TableHead>Období</TableHead>
                   <TableHead>Frekvence</TableHead>
                   <TableHead>Stav</TableHead>
-                  {hasPermission("medical.write") && <TableHead className="text-right">Akce</TableHead>}
+                  {hasAnyPermission(["training.write_own", "training.write_all"]) && <TableHead className="text-right">Akce</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -327,7 +337,7 @@ export default function PhysioPage() {
                           {plan.is_active ? "Aktivní" : "Neaktivní"}
                         </Badge>
                       </TableCell>
-                      {hasPermission("medical.write") && (
+                      {hasAnyPermission(["training.write_own", "training.write_all"]) && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => openEditDialog(plan)}>
